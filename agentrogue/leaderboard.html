@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AgentRogue 排行榜</title>
+<style>
+body{margin:0;background:radial-gradient(circle at 50% 0%,#2b2410,#0b0b0f 70%);color:#f3eee0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;min-height:100vh}
+.wrap{max-width:860px;margin:0 auto;padding:32px 20px}
+h1{color:#f0b90b;margin:0 0 4px}
+p{color:#b9b3a3}
+.stats{display:flex;gap:12px;margin:18px 0}
+.stat{flex:1;background:#15151b;border:1px solid #3a3320;border-radius:12px;padding:14px}
+.stat b{display:block;font-size:24px;color:#f0b90b}
+table{width:100%;border-collapse:collapse;background:#15151b;border:1px solid #3a3320;border-radius:12px;overflow:hidden}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #26231a;font-size:14px}
+th{color:#b9b3a3;font-weight:600;background:#1b1a14}
+td.addr{font-family:ui-monospace,Menlo,monospace}
+a{color:#f0b90b}
+.rank1{color:#ffd54a;font-weight:700}
+#msg{margin:12px 0;color:#b9b3a3}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AgentRogue 排行榜</h1>
+  <p>只有持有 Agent ID 的币安 AI 钱包能上榜。数据直接读取 BNB Chain 合约 <a id="ca" target="_blank"></a>。测试版：战绩由客户端自报。</p>
+  <div class="stats">
+    <div class="stat">玩家<b id="players">-</b></div>
+    <div class="stat">总场次<b id="runs">-</b></div>
+    <div class="stat">最高波数<b id="top">-</b></div>
+  </div>
+  <div id="msg">读取链上数据中…</div>
+  <table><thead><tr><th>#</th><th>Agent 钱包</th><th>最佳波数</th><th>模式</th><th>结果</th><th>场次</th><th>时间</th></tr></thead><tbody id="rows"></tbody></table>
+  <p style="margin-top:20px"><a href="./">← 回到游戏</a></p>
+</div>
+<script type="module">
+import { createPublicClient, http, fallback, parseAbi } from "https://esm.sh/viem@2.21.0";
+import { bsc } from "https://esm.sh/viem@2.21.0/chains";
+const CA = "0xE011596E90c90cCa54b3357ed3F15A1Cd958D060";
+const MODES = ["经典", "无尽", "无尽·传说", "挑战", "每日"];
+document.getElementById("ca").href = "https://bscscan.com/address/" + CA;
+document.getElementById("ca").textContent = CA.slice(0, 6) + "…" + CA.slice(-4);
+const abi = parseAbi([
+  "function totalRuns() view returns (uint256)",
+  "function playerCount() view returns (uint256)",
+  "function page(uint256 start, uint256 n) view returns (address[] addrs, (uint32 wave, uint8 mode, bool victory, uint64 time, bytes32 runHash)[] bests, uint32[] runs)",
+]);
+const c = createPublicClient({ chain: bsc, transport: fallback([http("https://bsc-dataseed.bnbchain.org"), http("https://bsc-rpc.publicnode.com"), http("https://bsc-dataseed1.defibit.io")]) });
+try {
+  const [total, count] = await Promise.all([c.readContract({ address: CA, abi, functionName: "totalRuns" }), c.readContract({ address: CA, abi, functionName: "playerCount" })]);
+  const rows = [];
+  for (let s = 0n; s < count; s += 200n) {
+    const [addrs, bests, runs] = await c.readContract({ address: CA, abi, functionName: "page", args: [s, 200n] });
+    addrs.forEach((a, i) => rows.push({ a, ...bests[i], runs: runs[i] }));
+  }
+  const ranked = rows.filter(r => r.wave > 0).sort((x, y) => y.wave - x.wave || Number(y.victory) - Number(x.victory) || Number(x.time - y.time));
+  document.getElementById("players").textContent = count.toString();
+  document.getElementById("runs").textContent = total.toString();
+  document.getElementById("top").textContent = ranked[0]?.wave ?? "-";
+  document.getElementById("msg").textContent = ranked.length ? "" : "还没有人上榜，打完一局把战绩记上链吧。";
+  document.getElementById("rows").innerHTML = ranked.map((r, i) => `<tr><td class="${i === 0 ? "rank1" : ""}">${i + 1}</td><td class="addr"><a target="_blank" href="https://bscscan.com/address/${r.a}">${r.a.slice(0, 6)}…${r.a.slice(-4)}</a></td><td>${r.wave}</td><td>${MODES[r.mode] ?? r.mode}</td><td>${r.victory ? "通关" : "—"}</td><td>${r.runs}</td><td>${new Date(Number(r.time) * 1000).toLocaleString()}</td></tr>`).join("");
+} catch (e) {
+  document.getElementById("msg").textContent = "读取失败：" + (e.shortMessage || e.message);
+}
+</script>
+</body>
+</html>
