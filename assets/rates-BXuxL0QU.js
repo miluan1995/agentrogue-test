@@ -1,0 +1,2 @@
+import{n as e}from"./rolldown-runtime-DvfoX5Ak.js";function setSpeciesDataRegistry(e){t=e}var t;function init_global_species_data_registry(){return(init_global_species_data_registry=e((()=>{})))()}var n,r;function init_rates(){return(init_rates=e((()=>{n=[36,24,12,6],r=[12,8,6,4]})))()}export{setSpeciesDataRegistry as a,init_global_species_data_registry as i,n,t as o,init_rates as r,r as t};
+//# sourceMappingURL=rates-BXuxL0QU.js.map

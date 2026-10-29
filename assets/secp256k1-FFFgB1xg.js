@@ -1,0 +1,1 @@
+import{n as e,t}from"./secp256k1-C_9lEYKj.js";t();export{e as secp256k1};

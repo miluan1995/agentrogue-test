@@ -1,0 +1,2 @@
+import{n as e}from"./rolldown-runtime-DvfoX5Ak.js";function initGlobalScene(e){t=e}var t;function init_global_scene(){return(init_global_scene=e((()=>{})))()}export{initGlobalScene as n,init_global_scene as r,t};
+//# sourceMappingURL=global-scene-DsfKuIp6.js.map
